@@ -93,15 +93,15 @@ class Controls:
       self.CP = messaging.log_from_bytes(self.params.get("CarParams", block=True), car.CarParams)
       cloudlog.info("controlsd got CarParams")
 
-      # Uses car interface helper functions, altering state won't be considered by card for actuation
+      # 使用汽车接口助手函数，改变状态不会被卡片考虑用于执行
       self.CI = get_car_interface(self.CP)
     else:
       self.CI, self.CP = CI, CI.CP
 
-    # Ensure the current branch is cached, otherwise the first iteration of controlsd lags
+    # 确保当前分支被缓存，否则controlsd的第一次迭代会滞后
     self.branch = get_short_branch()
 
-    # Setup sockets
+    # 设置套接字
     self.pm = messaging.PubMaster(['controlsState', 'carControl', 'onroadEvents', 'controlsStateExt'])
 
     self.sensor_packets = ["accelerometer", "gyroscope"]
@@ -112,14 +112,14 @@ class Controls:
 
     self.log_sock = messaging.sub_sock('androidLog')
 
-    # TODO: de-couple controlsd with card/conflate on carState without introducing controls mismatches
+    # TODO: 将controlsd与card解耦/在不引入控制不匹配的情况下合并carState
     self.car_state_sock = messaging.sub_sock('carState', timeout=20)
 
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
       ignore += ['driverCameraState', 'managerState']
     if REPLAY:
-      # no vipc in replay will make them ignored anyways
+      # replay中没有vipc会使它们被忽略
       ignore += ['roadCameraState', 'wideRoadCameraState']
     # dp
     if not self._dp_lat_lane_priority_mode:
@@ -128,23 +128,23 @@ class Controls:
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'liveLocationKalman',
                                    'managerState', 'liveParameters', 'radarState', 'liveTorqueParameters',
-                                   "lateralPlan", # dp - lane priority mode
+                                   "lateralPlan", # dp - 车道优先模式
                                    'testJoystick'] + self.camera_packets + self.sensor_packets,
                                   ignore_alive=ignore, ignore_avg_freq=ignore+['radarState', 'testJoystick'], ignore_valid=['testJoystick', ],
                                   frequency=int(1/DT_CTRL))
 
     self.joystick_mode = self.params.get_bool("JoystickDebugMode")
 
-    # read params
+    # 读取参数
     self.is_metric = self.params.get_bool("IsMetric")
     self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
 
-    # detect sound card presence and ensure successful init
+    # 检测声卡存在并确保成功初始化
     sounds_available = HARDWARE.get_sound_card_online()
 
     car_recognized = self.CP.carName != 'mock'
 
-    # cleanup old params
+    # 清理旧参数
     if not self.CP.experimentalLongitudinalAvailable:
       self.params.remove("ExperimentalLongitudinalEnabled")
     if not self.CP.openpilotLongitudinalControl:
@@ -194,17 +194,17 @@ class Controls:
     self.startup_event = get_startup_event(car_recognized, not self.CP.passive, len(self.CP.carFw) > 0)
 
     if not sounds_available:
-      self.events.add(EventName.soundsUnavailable, static=True)
+      self.events.add(EventName.soundsUnavailable, static=True)  # 如果声音不可用，添加声音不可用事件
     if not car_recognized:
-      self.events.add(EventName.carUnrecognized, static=True)
+      self.events.add(EventName.carUnrecognized, static=True)  # 如果车辆未识别，添加车辆未识别事件
       if len(self.CP.carFw) > 0:
-        set_offroad_alert("Offroad_CarUnrecognized", True)
+        set_offroad_alert("Offroad_CarUnrecognized", True)  # 如果有车载固件，设置车辆未识别的离线警报
       else:
-        set_offroad_alert("Offroad_NoFirmware", True)
+        set_offroad_alert("Offroad_NoFirmware", True)  # 如果没有车载固件，设置无固件的离线警报
     elif self.CP.passive:
-      self.events.add(EventName.dashcamMode, static=True)
+      self.events.add(EventName.dashcamMode, static=True)  # 如果是被动模式，添加行车记录仪模式事件
 
-    # controlsd is driven by carState, expected at 100Hz
+    # controlsd由carState驱动，预期频率为100Hz
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
   def set_initial_state(self):
@@ -218,30 +218,30 @@ class Controls:
         self.state = State.enabled
 
   def update_events(self, CS):
-    """Compute onroadEvents from carState"""
+    """从carState计算onroadEvents"""
 
     self.events.clear()
 
-    # Add joystick event, static on cars, dynamic on nonCars
+    # 添加操纵杆事件，静态在汽车上，动态在非汽车上
     if self.joystick_mode:
       self.events.add(EventName.joystickDebug)
       self.startup_event = None
 
-    # Add startup event
+    # 添加启动事件
     if self.startup_event is not None:
       self.events.add(self.startup_event)
       self.startup_event = None
 
-    # Don't add any more events if not initialized
+    # 如果未初始化，不再添加任何事件
     if not self.initialized:
       self.events.add(EventName.controlsInitializing)
       return
 
-    # no more events while in dashcam mode
+    # 在行车记录仪模式下不再添加事件
     if self.CP.passive:
       return
 
-    # Block resume if cruise never previously enabled
+    # 如果巡航从未启用过，则阻止恢复
     resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
     if not self.CP.pcmCruise and not self.v_cruise_helper.v_cruise_initialized and resume_pressed:
       self.events.add(EventName.resumeBlocked)
@@ -249,34 +249,34 @@ class Controls:
     if not self.CP.notCar:
       self.events.add_from_msg(self.sm['driverMonitoringState'].events)
 
-    # Add car events, ignore if CAN isn't valid
+    # 添加汽车事件，如果CAN无效则忽略
     if CS.canValid:
       self.events.add_from_msg(CS.events)
 
-    # Create events for temperature, disk space, and memory
+    # 为温度、磁盘空间和内存创建事件
     if self.sm['deviceState'].thermalStatus >= ThermalStatus.red:
       self.events.add(EventName.overheat)
     if self.sm['deviceState'].freeSpacePercent < 7 and not SIMULATION:
-      # under 7% of space free no enable allowed
+      # 可用空间低于7%时不允许启用
       self.events.add(EventName.outOfSpace)
     if self.sm['deviceState'].memoryUsagePercent > 90 and not SIMULATION:
       self.events.add(EventName.lowMemory)
 
-    # TODO: enable this once loggerd CPU usage is more reasonable
+    # TODO: 一旦loggerd的CPU使用率更合理，启用此功能
     #cpus = list(self.sm['deviceState'].cpuUsagePercent)
     #if max(cpus, default=0) > 95 and not SIMULATION:
     #  self.events.add(EventName.highCpuUsage)
 
-    # Alert if fan isn't spinning for 5 seconds
+    # 如果风扇在5秒内没有旋转，则发出警报
     if self.sm['peripheralState'].pandaType != log.PandaState.PandaType.unknown:
       if self.sm['peripheralState'].fanSpeedRpm < 500 and self.sm['deviceState'].fanSpeedPercentDesired > 50:
-        # allow enough time for the fan controller in the panda to recover from stalls
+        # 允许足够的时间让panda中的风扇控制器从停转中恢复
         if (self.sm.frame - self.last_functional_fan_frame) * DT_CTRL > 15.0:
           self.events.add(EventName.fanMalfunction)
       else:
         self.last_functional_fan_frame = self.sm.frame
 
-    # Handle calibration status
+    # 处理校准状态
     cal_status = self.sm['liveCalibration'].calStatus
     if cal_status != log.LiveCalibrationData.Status.calibrated:
       if cal_status == log.LiveCalibrationData.Status.uncalibrated:
@@ -289,7 +289,7 @@ class Controls:
       else:
         self.events.add(EventName.calibrationInvalid)
 
-    # Handle lane change
+    # 处理变道
     if self._dp_lat_lane_change_assist_mode in [custom.LaneChangeAssistMode.disable, custom.LaneChangeAssistMode.hold]:
       pass
     elif self.sm['modelV2'].meta.laneChangeState == LaneChangeState.preLaneChange:
@@ -307,7 +307,7 @@ class Controls:
       self.events.add(EventName.laneChange)
 
     for i, pandaState in enumerate(self.sm['pandaStates']):
-      # All pandas must match the list of safetyConfigs, and if outside this list, must be silent or noOutput
+      # 所有panda必须与safetyConfigs列表匹配，如果不在此列表中，必须是silent或noOutput
       if i < len(self.CP.safetyConfigs):
         safety_mismatch = pandaState.safetyModel != self.CP.safetyConfigs[i].safetyModel or \
                           pandaState.safetyParam != self.CP.safetyConfigs[i].safetyParam or \
@@ -315,16 +315,16 @@ class Controls:
       else:
         safety_mismatch = pandaState.safetyModel not in IGNORED_SAFETY_MODES
 
-      # safety mismatch allows some time for pandad to set the safety mode and publish it back from panda
+      # 安全不匹配允许一些时间让pandad设置安全模式并从panda发布回来
       if (safety_mismatch and self.sm.frame*DT_CTRL > 10.) or pandaState.safetyRxChecksInvalid or self.mismatch_counter >= 200:
         self.events.add(EventName.controlsMismatch)
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
         self.events.add(EventName.relayMalfunction)
 
-    # Handle HW and system malfunctions
-    # Order is very intentional here. Be careful when modifying this.
-    # All events here should at least have NO_ENTRY and SOFT_DISABLE.
+    # 处理硬件和系统故障
+    # 顺序非常有意。修改时要小心。
+    # 这里的所有事件至少应该有NO_ENTRY和SOFT_DISABLE。
     num_events = len(self.events)
 
     not_running = {p.name for p in self.sm['managerState'].processes if not p.running and p.shouldBeRunning}
@@ -357,7 +357,7 @@ class Controls:
     elif not CS.canValid:
       self.events.add(EventName.canError)
 
-    # generic catch-all. ideally, a more specific event should be added above instead
+    # 通用的捕获所有。理想情况下，应该在上面添加更具体的事件
     has_disable_events = self.events.contains(ET.NO_ENTRY) and (self.events.contains(ET.SOFT_DISABLE) or self.events.contains(ET.IMMEDIATE_DISABLE))
     no_system_errors = (not has_disable_events) or (len(self.events) == num_events)
     if not self.sm.all_checks() and no_system_errors:
