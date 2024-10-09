@@ -33,6 +33,7 @@ def manager_init() -> None:
     ("CompletedTrainingVersion", "0"),  # 完成培训版本
     ("DisengageOnAccelerator", "0"),  # 加速器脱离
     ("GsmMetered", "1"),  # GSM计量
+    ("IsMetric", "1"),  # 使用公制单位
     ("HasAcceptedTerms", "0"),  # 已接受条款
     ("LanguageSetting", "main_zh-CHT"),  # 语言设置
     ("OpenpilotEnabledToggle", "1"),  # Openpilot启用切换
@@ -42,7 +43,7 @@ def manager_init() -> None:
     ("dp_device_display_off_mode", "0"),  # 设备显示关闭模式
     ("dp_ui_rainbow", "0"),  # UI彩虹模式
     ("dp_ui_flight_panel", "0"),  # UI飞行面板
-    ("dp_long_de2e", "0"),  # 长期de2e
+    ("dp_long_de2e", "1"),  # 长期de2e
     ("dp_long_personality_btn", "0"),  # 长期个性按钮
     ("dp_ui_map_full", "0"),  # UI全地图
     ("dp_alka", "0"),  # Alka
@@ -50,24 +51,24 @@ def manager_init() -> None:
     ("dp_vag_sng", "0"),  # VAG SNG
     ("dp_vehicle_list", ""),  # 车辆列表
     ("dp_vehicle_assigned", ""),  # 分配的车辆
-    ("dp_nav_free_map", "0"),  # 免费地图导航
-    ("dp_nav_name", "0"),  # 导航名称
+    ("dp_nav_free_map", "1"),  # 免费地图导航
+    ("dp_nav_name", "1"),  # 导航名称
     ("dp_nav_traffic", "0"),  # 导航交通
     ("dp_toyota_auto_lock", "0"),  # 丰田自动锁
     ("dp_toyota_auto_unlock", "0"),  # 丰田自动解锁
-    ("dp_device_disable_onroad_uploads", "0"),  # 禁用道路上传
+    ("dp_device_disable_onroad_uploads", "1"),  # 禁用道路上传
     ("dp_toyota_zss", "0"),  # 丰田ZSS
     ("dp_hkg_canfd_low_speed_turn_enhancer", "0"),  # HKG CANFD低速转弯增强器
     ("dp_long_alt_driving_personality_mode", "0"),  # 长期备用驾驶个性模式
     ("dp_long_alt_driving_personality_speed", "0"),  # 长期备用驾驶个性速度
-    ("dp_long_curve_speed_limiter", "0"),  # 长期曲线速度限制器
+    ("dp_long_curve_speed_limiter", "1"),  # 长期曲线速度限制器
     ("dp_lat_lane_change_assist_mode", "0"),  # 车道变更辅助模式
     ("dp_lat_lane_change_assist_speed", "32"),  # 车道变更辅助速度
     ("dp_lat_lane_change_assist_auto_timer", "1.5"),  # 车道变更辅助自动计时器
-    ("dp_lat_road_edge_detection", "0"),  # 道路边缘检测
-    ("dp_device_disable_logging", "0"),  # 禁用设备日志记录
+    ("dp_lat_road_edge_detection", "1"),  # 道路边缘检测
+    ("dp_device_disable_logging", "1"),  # 禁用设备日志记录
     ("dp_toyota_pcm_compensation", "0"),  # 丰田PCM补偿
-    ("dp_device_is_clone", "0"),  # 设备是克隆
+    ("dp_device_is_clone", "1"),  # 设备是克隆
     ("dp_device_dm_unavailable", "0"),  # 设备DM不可用
     ("dp_toyota_enhanced_bsm", "0"),  # 丰田增强BSM
     ("dp_toyota_auto_brake_hold", "0"),  # 丰田自动刹车保持
