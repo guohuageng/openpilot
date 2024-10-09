@@ -322,6 +322,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     # TODO: this should move to TICI.initialize_hardware, but we currently can't import params there
     # dp - only check nvme issue with comma device
+    # if TICI and not dp_device_is_clone:     #去掉无硬盘警告
     if False:
       if not os.path.isfile("/persist/comma/living-in-the-moment"):
         if not Path("/data/media").is_mount():
