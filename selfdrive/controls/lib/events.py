@@ -321,14 +321,40 @@ def joystick_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster,
   vals = f"油門: {round(gb * 100.)}%, 方向盤: {round(steer * 100.)}%"
   return NormalPermanentAlert("搖桿模式", vals)
 
-
-
 EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   # ********** events with no alerts **********
 
   EventName.stockFcw: {},
   EventName.actuatorsApiUnavailable: {},
 
+  # ********** events only containing alerts displayed in all states **********
+  EventName.joystickDebug: {
+    ET.WARNING: joystick_alert,
+    ET.PERMANENT: NormalPermanentAlert("搖桿模式"),
+  },
+  EventName.controlsInitializing: {
+    ET.NO_ENTRY: NoEntryAlert("系統初始化中"),
+  },
+  EventName.startup: {
+    ET.PERMANENT: StartupAlert("隨時準備接管控制")
+  },
+  EventName.startupMaster: {
+    ET.PERMANENT: startup_master_alert,
+  },
+  # 車輛已被識別，但僅標記為行車記錄模式
+  EventName.startupNoControl: {
+    ET.PERMANENT: StartupAlert("行車記錄模式"),
+    ET.NO_ENTRY: NoEntryAlert("行車記錄模式"),
+  },
+  # 車輛未被識別
+  EventName.startupNoCar: {
+    ET.PERMANENT: StartupAlert("不支援的車輛行車記錄模式"),
+  },
+  EventName.startupNoFw: {
+    ET.PERMANENT: StartupAlert("車輛無法識別",
+                               "請檢查逗號電源連接",
+                               alert_status=AlertStatus.userPrompt),
+  },
 
   EventName.dashcamMode: {
     ET.PERMANENT: NormalPermanentAlert("行車記錄模式",
